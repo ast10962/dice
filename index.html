@@ -89,6 +89,12 @@ svg{
     font-weight:bold;
 }
 
+.message{
+    margin-top:15px;
+    font-size:26px;
+    font-weight:bold;
+}
+
 </style>
 </head>
 
@@ -159,6 +165,119 @@ const shapes = {
     20:"100,10 190,70 160,180 40,180 10,70"
 };
 
+
+/* 
+   Web Audio API dice sound.
+   No mp3 needed.
+   It creates many short noise clicks to imitate dice rolling.
+*/
+
+let audioContext;
+
+function getAudioContext(){
+
+    if(!audioContext){
+        audioContext =
+            new (window.AudioContext || window.webkitAudioContext)();
+    }
+
+    return audioContext;
+}
+
+function playClickSound(time, volume, pitch){
+
+    const ctx = getAudioContext();
+
+    const oscillator = ctx.createOscillator();
+    const gain = ctx.createGain();
+
+    oscillator.type = "square";
+    oscillator.frequency.setValueAtTime(pitch, time);
+
+    gain.gain.setValueAtTime(volume, time);
+    gain.gain.exponentialRampToValueAtTime(0.001, time + 0.04);
+
+    oscillator.connect(gain);
+    gain.connect(ctx.destination);
+
+    oscillator.start(time);
+    oscillator.stop(time + 0.04);
+}
+
+function playDiceRollSound(){
+
+    const ctx = getAudioContext();
+
+    if(ctx.state === "suspended"){
+        ctx.resume();
+    }
+
+    const now = ctx.currentTime;
+
+    for(let i=0;i<35;i++){
+
+        const delay = i * 0.045;
+        const volume = 0.04 + Math.random() * 0.05;
+        const pitch = 120 + Math.random() * 420;
+
+        playClickSound(now + delay, volume, pitch);
+    }
+}
+
+function playFinalSound(){
+
+    const ctx = getAudioContext();
+
+    if(ctx.state === "suspended"){
+        ctx.resume();
+    }
+
+    const now = ctx.currentTime;
+
+    const oscillator = ctx.createOscillator();
+    const gain = ctx.createGain();
+
+    oscillator.type = "triangle";
+    oscillator.frequency.setValueAtTime(660, now);
+    oscillator.frequency.exponentialRampToValueAtTime(880, now + 0.15);
+
+    gain.gain.setValueAtTime(0.12, now);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.4);
+
+    oscillator.connect(gain);
+    gain.connect(ctx.destination);
+
+    oscillator.start(now);
+    oscillator.stop(now + 0.4);
+}
+
+function playCriticalFailSound(){
+
+    const ctx = getAudioContext();
+
+    if(ctx.state === "suspended"){
+        ctx.resume();
+    }
+
+    const now = ctx.currentTime;
+
+    const oscillator = ctx.createOscillator();
+    const gain = ctx.createGain();
+
+    oscillator.type = "sawtooth";
+    oscillator.frequency.setValueAtTime(220, now);
+    oscillator.frequency.exponentialRampToValueAtTime(70, now + 0.5);
+
+    gain.gain.setValueAtTime(0.12, now);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.6);
+
+    oscillator.connect(gain);
+    gain.connect(ctx.destination);
+
+    oscillator.start(now);
+    oscillator.stop(now + 0.6);
+}
+
 function changeDiceShape(){
 
     const sides =
@@ -180,6 +299,18 @@ function rollDice(){
 
     const sides =
         parseInt(document.getElementById("diceType").value);
+
+    if(isNaN(count) || count < 1){
+        alert("Please enter at least 1 dice.");
+        return;
+    }
+
+    if(count > 100){
+        alert("Maximum 100 dice only.");
+        return;
+    }
+
+    playDiceRollSound();
 
     const dice =
         document.getElementById("dice");
@@ -227,14 +358,20 @@ function rollDice(){
             rolls.includes(20)
         ){
             message =
-            "<div style='color:gold;'>🌟 Natural 20!</div>";
-        }
+            "<div class='message' style='color:gold;'>🌟 Natural 20!</div>";
 
-        if(
+            playFinalSound();
+        }
+        else if(
             rolls.every(x => x===1)
         ){
             message =
-            "<div style='color:red;'>💀 Critical Failure!</div>";
+            "<div class='message' style='color:red;'>💀 Critical Failure!</div>";
+
+            playCriticalFailSound();
+        }
+        else{
+            playFinalSound();
         }
 
         result.innerHTML =
