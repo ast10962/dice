@@ -2,17 +2,18 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
 <title>D&D Dice Roller</title>
 
 <style>
 
 body{
-    background:#1b1b1b;
+    background:#1a1a1a;
     color:white;
     font-family:Arial,sans-serif;
     text-align:center;
-    padding-top:30px;
+    margin:0;
+    padding:30px;
 }
 
 h1{
@@ -23,365 +24,482 @@ h1{
     margin:20px;
 }
 
-input,select,button{
+input,
+select,
+button{
     padding:10px;
     font-size:18px;
-    border-radius:8px;
+    border-radius:10px;
     border:none;
-    margin:5px;
 }
 
 button{
     background:gold;
-    cursor:pointer;
     font-weight:bold;
+    cursor:pointer;
+    margin-left:10px;
 }
 
 button:hover{
     background:#ffeb3b;
 }
 
-.dice-container{
-    position:relative;
-    width:250px;
-    margin:auto;
+.diceDisplay{
+    display:flex;
+    justify-content:center;
+    flex-wrap:wrap;
+    gap:15px;
+    margin-top:30px;
+    min-height:120px;
 }
 
-svg{
-    width:220px;
-    height:220px;
+.die{
+
+    width:90px;
+    height:90px;
+
+    display:flex;
+    justify-content:center;
+    align-items:center;
+
+    background:#c62828;
+
+    border:3px solid white;
+
+    border-radius:15px;
+
+    font-size:32px;
+    font-weight:bold;
+
+    color:white;
+
+    box-shadow:0 0 15px rgba(255,215,0,.3);
 }
 
 .rolling{
-    animation:spin 0.2s linear infinite;
+    animation:spin .25s linear infinite;
 }
 
 @keyframes spin{
-    from{transform:rotate(0deg);}
-    to{transform:rotate(360deg);}
-}
-
-.number{
-    position:absolute;
-    top:50%;
-    left:50%;
-    transform:translate(-50%,-50%);
-    font-size:60px;
-    font-weight:bold;
-    color:white;
-    text-shadow:0 0 10px gold;
+    from{
+        transform:rotate(0deg);
+    }
+    to{
+        transform:rotate(360deg);
+    }
 }
 
 .result{
-    margin-top:20px;
+    margin-top:25px;
     font-size:24px;
-}
-
-.rolls{
-    margin-top:15px;
-    font-size:28px;
 }
 
 .total{
     margin-top:20px;
+    font-size:42px;
     color:gold;
-    font-size:40px;
     font-weight:bold;
 }
 
-.message{
-    margin-top:15px;
-    font-size:26px;
+.critical{
+    color:gold;
+    font-size:32px;
     font-weight:bold;
+    animation:pulse 1s infinite;
+}
+
+.fail{
+    color:red;
+    font-size:32px;
+    font-weight:bold;
+    animation:pulse 1s infinite;
+}
+
+@keyframes pulse{
+    0%{transform:scale(1);}
+    50%{transform:scale(1.2);}
+    100%{transform:scale(1);}
+}
+
+.goldGlow{
+    background:#5c4500;
+}
+
+.redGlow{
+    background:#400000;
 }
 
 </style>
 </head>
-
 <body>
 
 <h1>🎲 D&D Dice Roller</h1>
 
 <div class="controls">
 
-    <input
-        type="number"
-        id="diceCount"
-        min="1"
-        max="100"
-        value="1"
-        style="width:80px;">
+<input
+    id="diceCount"
+    type="number"
+    min="1"
+    max="5"
+    value="1"
+    style="width:70px;">
 
-    <span style="font-size:24px;">d</span>
+<span style="font-size:24px;">d</span>
 
-    <select id="diceType" onchange="changeDiceShape()">
-        <option value="4">D4</option>
-        <option value="6">D6</option>
-        <option value="8">D8</option>
-        <option value="10">D10</option>
-        <option value="12">D12</option>
-        <option value="20" selected>D20</option>
-    </select>
+<select id="diceType">
 
-</div>
+    <option value="4">D4</option>
+    <option value="6">D6</option>
+    <option value="8">D8</option>
+    <option value="10">D10</option>
+    <option value="12">D12</option>
+    <option value="20" selected>D20</option>
 
-<div class="dice-container">
+</select>
 
-    <svg id="dice" viewBox="0 0 200 200">
-
-        <polygon
-            id="diceShape"
-            points="100,10 190,70 160,180 40,180 10,70"
-            fill="#c62828"
-            stroke="white"
-            stroke-width="5"/>
-
-    </svg>
-
-    <div id="number" class="number">20</div>
+<button onclick="rollDice()">
+🎲 Roll
+</button>
 
 </div>
 
-<button onclick="rollDice()">🎲 Roll Dice</button>
+<div
+    id="diceDisplay"
+    class="diceDisplay">
+</div>
 
-<div id="result" class="result">
-    Ready to Roll
+<div
+    id="result"
+    class="result">
+
+Ready to Roll
+
 </div>
 
 <script>
-
-const shapes = {
-
-    4:"100,20 180,180 20,180",
-
-    6:"30,30 170,30 170,170 30,170",
-
-    8:"100,10 190,100 100,190 10,100",
-
-    10:"100,10 180,60 160,170 40,170 20,60",
-
-    12:"100,10 145,20 180,50 190,100 180,150 145,180 100,190 55,180 20,150 10,100 20,50 55,20",
-
-    20:"100,10 190,70 160,180 40,180 10,70"
-};
-
-
-/* 
-   Web Audio API dice sound.
-   No mp3 needed.
-   It creates many short noise clicks to imitate dice rolling.
-*/
 
 let audioContext;
 
 function getAudioContext(){
 
     if(!audioContext){
+
         audioContext =
-            new (window.AudioContext || window.webkitAudioContext)();
+            new(window.AudioContext
+            || window.webkitAudioContext)();
+
     }
 
     return audioContext;
 }
 
-function playClickSound(time, volume, pitch){
+function clickSound(time){
 
     const ctx = getAudioContext();
 
-    const oscillator = ctx.createOscillator();
-    const gain = ctx.createGain();
+    const osc =
+        ctx.createOscillator();
 
-    oscillator.type = "square";
-    oscillator.frequency.setValueAtTime(pitch, time);
+    const gain =
+        ctx.createGain();
 
-    gain.gain.setValueAtTime(volume, time);
-    gain.gain.exponentialRampToValueAtTime(0.001, time + 0.04);
+    osc.type="square";
 
-    oscillator.connect(gain);
-    gain.connect(ctx.destination);
+    osc.frequency.value =
+        100 + Math.random()*400;
 
-    oscillator.start(time);
-    oscillator.stop(time + 0.04);
+    osc.connect(gain);
+
+    gain.connect(
+        ctx.destination
+    );
+
+    gain.gain.setValueAtTime(
+        0.03,
+        time
+    );
+
+    gain.gain.exponentialRampToValueAtTime(
+        0.001,
+        time + 0.04
+    );
+
+    osc.start(time);
+
+    osc.stop(time + 0.04);
 }
 
-function playDiceRollSound(){
+function playDiceSound(){
 
-    const ctx = getAudioContext();
+    const ctx =
+        getAudioContext();
 
-    if(ctx.state === "suspended"){
+    if(ctx.state==="suspended"){
         ctx.resume();
     }
 
-    const now = ctx.currentTime;
+    const now =
+        ctx.currentTime;
 
     for(let i=0;i<35;i++){
 
-        const delay = i * 0.045;
-        const volume = 0.04 + Math.random() * 0.05;
-        const pitch = 120 + Math.random() * 420;
+        clickSound(
+            now + i*0.045
+        );
 
-        playClickSound(now + delay, volume, pitch);
     }
 }
 
-function playFinalSound(){
+function playSuccess(){
 
-    const ctx = getAudioContext();
+    const ctx =
+        getAudioContext();
 
-    if(ctx.state === "suspended"){
-        ctx.resume();
-    }
+    const osc =
+        ctx.createOscillator();
 
-    const now = ctx.currentTime;
+    const gain =
+        ctx.createGain();
 
-    const oscillator = ctx.createOscillator();
-    const gain = ctx.createGain();
+    osc.type="triangle";
 
-    oscillator.type = "triangle";
-    oscillator.frequency.setValueAtTime(660, now);
-    oscillator.frequency.exponentialRampToValueAtTime(880, now + 0.15);
+    osc.frequency.setValueAtTime(
+        650,
+        ctx.currentTime
+    );
 
-    gain.gain.setValueAtTime(0.12, now);
-    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.4);
+    osc.frequency.exponentialRampToValueAtTime(
+        900,
+        ctx.currentTime + 0.25
+    );
 
-    oscillator.connect(gain);
-    gain.connect(ctx.destination);
+    gain.gain.setValueAtTime(
+        0.12,
+        ctx.currentTime
+    );
 
-    oscillator.start(now);
-    oscillator.stop(now + 0.4);
+    gain.gain.exponentialRampToValueAtTime(
+        0.001,
+        ctx.currentTime + 0.4
+    );
+
+    osc.connect(gain);
+
+    gain.connect(
+        ctx.destination
+    );
+
+    osc.start();
+
+    osc.stop(
+        ctx.currentTime + 0.4
+    );
 }
 
-function playCriticalFailSound(){
+function playFail(){
 
-    const ctx = getAudioContext();
+    const ctx =
+        getAudioContext();
 
-    if(ctx.state === "suspended"){
-        ctx.resume();
-    }
+    const osc =
+        ctx.createOscillator();
 
-    const now = ctx.currentTime;
+    const gain =
+        ctx.createGain();
 
-    const oscillator = ctx.createOscillator();
-    const gain = ctx.createGain();
+    osc.type="sawtooth";
 
-    oscillator.type = "sawtooth";
-    oscillator.frequency.setValueAtTime(220, now);
-    oscillator.frequency.exponentialRampToValueAtTime(70, now + 0.5);
+    osc.frequency.setValueAtTime(
+        250,
+        ctx.currentTime
+    );
 
-    gain.gain.setValueAtTime(0.12, now);
-    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.6);
+    osc.frequency.exponentialRampToValueAtTime(
+        80,
+        ctx.currentTime + 0.5
+    );
 
-    oscillator.connect(gain);
-    gain.connect(ctx.destination);
+    gain.gain.setValueAtTime(
+        0.12,
+        ctx.currentTime
+    );
 
-    oscillator.start(now);
-    oscillator.stop(now + 0.6);
-}
+    gain.gain.exponentialRampToValueAtTime(
+        0.001,
+        ctx.currentTime + 0.5
+    );
 
-function changeDiceShape(){
+    osc.connect(gain);
 
-    const sides =
-        document.getElementById("diceType").value;
+    gain.connect(
+        ctx.destination
+    );
 
-    document
-        .getElementById("diceShape")
-        .setAttribute("points", shapes[sides]);
+    osc.start();
 
-    document
-        .getElementById("number")
-        .innerText = sides;
+    osc.stop(
+        ctx.currentTime + 0.5
+    );
 }
 
 function rollDice(){
 
+    document.body.classList.remove(
+        "goldGlow",
+        "redGlow"
+    );
+
     const count =
-        parseInt(document.getElementById("diceCount").value);
+        parseInt(
+            document.getElementById(
+                "diceCount"
+            ).value
+        );
 
     const sides =
-        parseInt(document.getElementById("diceType").value);
+        parseInt(
+            document.getElementById(
+                "diceType"
+            ).value
+        );
 
-    if(isNaN(count) || count < 1){
-        alert("Please enter at least 1 dice.");
+    if(count < 1 || count > 5){
+
+        alert(
+            "Please select 1-5 dice."
+        );
+
         return;
     }
 
-    if(count > 100){
-        alert("Maximum 100 dice only.");
-        return;
-    }
+    playDiceSound();
 
-    playDiceRollSound();
-
-    const dice =
-        document.getElementById("dice");
-
-    const number =
-        document.getElementById("number");
+    const display =
+        document.getElementById(
+            "diceDisplay"
+        );
 
     const result =
-        document.getElementById("result");
+        document.getElementById(
+            "result"
+        );
 
-    dice.classList.add("rolling");
+    display.innerHTML = "";
 
-    const ticker = setInterval(()=>{
+    for(let i=0;i<count;i++){
 
-        number.innerText =
-            Math.floor(Math.random()*sides)+1;
+        display.innerHTML +=
+        `
+        <div class="die rolling" id="d${i}">
+            ?
+        </div>
+        `;
 
-    },50);
+    }
+
+    const animation =
+        setInterval(()=>{
+
+        for(let i=0;i<count;i++){
+
+            document.getElementById(
+                "d"+i
+            ).innerHTML =
+                Math.floor(
+                    Math.random()*sides
+                )+1;
+
+        }
+
+    },60);
 
     setTimeout(()=>{
 
-        clearInterval(ticker);
+        clearInterval(
+            animation
+        );
+
+        let total = 0;
 
         let rolls = [];
-        let total = 0;
 
         for(let i=0;i<count;i++){
 
             let roll =
-                Math.floor(Math.random()*sides)+1;
+                Math.floor(
+                    Math.random()*sides
+                )+1;
 
-            rolls.push(roll);
+            rolls.push(
+                roll
+            );
 
             total += roll;
+
+            let die =
+                document.getElementById(
+                    "d"+i
+                );
+
+            die.innerHTML =
+                roll;
+
+            die.classList.remove(
+                "rolling"
+            );
         }
-
-        number.innerText = total;
-
-        dice.classList.remove("rolling");
 
         let message = "";
 
         if(
-            sides === 20 &&
+            sides==20 &&
             rolls.includes(20)
         ){
-            message =
-            "<div class='message' style='color:gold;'>🌟 Natural 20!</div>";
 
-            playFinalSound();
+            playSuccess();
+
+            document.body.classList.add(
+                "goldGlow"
+            );
+
+            message =
+            `
+            <div class="critical">
+            🌟 NATURAL 20!
+            </div>
+            `;
         }
-        else if(
-            rolls.every(x => x===1)
+
+        if(
+            rolls.every(
+                x => x===1
+            )
         ){
-            message =
-            "<div class='message' style='color:red;'>💀 Critical Failure!</div>";
 
-            playCriticalFailSound();
-        }
-        else{
-            playFinalSound();
+            playFail();
+
+            document.body.classList.add(
+                "redGlow"
+            );
+
+            message =
+            `
+            <div class="fail">
+            💀 CRITICAL FAIL!
+            </div>
+            `;
         }
 
         result.innerHTML =
-
         `
         <div>
             <b>${count}d${sides}</b>
         </div>
 
-        <div class="rolls">
+        <div style="
+            margin-top:15px;
+            font-size:28px;">
             [ ${rolls.join(" ] [ ")} ]
         </div>
 
@@ -394,8 +512,6 @@ function rollDice(){
 
     },2000);
 }
-
-changeDiceShape();
 
 </script>
 
