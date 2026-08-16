@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>D&D D20 Roller</title>
+
+<style>
+body {
+    margin: 0;
+    height: 100vh;
+    background: #1a1a1a;
+    color: white;
+    font-family: Arial, sans-serif;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.container {
+    text-align: center;
+}
+
+.dice {
+    width: 220px;
+    height: 220px;
+    margin: 20px auto;
+    transition: transform 2s ease-out;
+}
+
+.rolling {
+    animation: spin 0.2s linear infinite;
+}
+
+@keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
+.number {
+    position: relative;
+    top: -155px;
+    font-size: 60px;
+    font-weight: bold;
+    color: white;
+    text-shadow: 0 0 10px gold;
+}
+
+button {
+    padding: 12px 24px;
+    font-size: 20px;
+    cursor: pointer;
+    border: none;
+    border-radius: 8px;
+    background: #d4af37;
+    color: black;
+    font-weight: bold;
+}
+
+button:hover {
+    background: gold;
+}
+
+.result {
+    margin-top: 15px;
+    font-size: 24px;
+}
+</style>
+</head>
+<body>
+
+<div class="container">
+    <h1>🎲 D&D D20 Roller</h1>
+
+    <div id="diceArea">
+        <svg class="dice" id="dice" viewBox="0 0 200 200">
+            <polygon
+                points="100,10 190,70 160,180 40,180 10,70"
+                fill="#c62828"
+                stroke="#ffffff"
+                stroke-width="5"/>
+        </svg>
+
+        <div class="number" id="number">20</div>
+    </div>
+
+    <button onclick="rollDice()">Roll D20</button>
+
+    <div class="result" id="result">
+        Ready to roll!
+    </div>
+</div>
+
+<script>
+function rollDice() {
+    const dice = document.getElementById('dice');
+    const num = document.getElementById('number');
+    const result = document.getElementById('result');
+
+    dice.classList.add('rolling');
+
+    let animation = setInterval(() => {
+        num.textContent = Math.floor(Math.random() * 20) + 1;
+    }, 50);
+
+    setTimeout(() => {
+        clearInterval(animation);
+
+        const finalRoll = Math.floor(Math.random() * 20) + 1;
+
+        num.textContent = finalRoll;
+        dice.classList.remove('rolling');
+
+        if(finalRoll === 20){
+            result.innerHTML = "🌟 Natural 20! Critical Hit!";
+        }
+        else if(finalRoll === 1){
+            result.innerHTML = "💀 Natural 1! Critical Fail!";
+        }
+        else{
+            result.innerHTML = "You rolled <b>" + finalRoll + "</b>";
+        }
+
+    }, 2000);
+}
+</script>
+
+</body>
+</html>
